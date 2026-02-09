@@ -1,0 +1,21 @@
+# Core LLM Libraries
+openai>=1.50.0
+anthropic>=0.40.0
+google-generativeai>=0.8.0
+
+# Helicone Async Logger
+helicone-async>=0.1.0
+
+# Framework Integrations
+langchain>=0.1.0
+langchain-openai>=0.1.0
+crewai>=0.80.0
+pyautogen>=0.4.0
+
+# Utilities
+python-dotenv>=1.0.0
+requests>=2.31.0
+
+# Optional: Data Science (for examples with analysis)
+pandas>=2.0.0
+numpy>=1.24.0
