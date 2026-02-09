@@ -1,0 +1,86 @@
+# Self-Hosted Helicone Stack
+# Deploy your own Helicone instance on-premise
+
+version: '3.8'
+
+services:
+  # PostgreSQL: User data, configuration, sessions
+  postgres:
+    image: postgres:15-alpine
+    container_name: helicone-postgres
+    environment:
+      POSTGRES_DB: helicone
+      POSTGRES_USER: helicone
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+
+  # ClickHouse: Analytics database for request logs
+  clickhouse:
+    image: clickhouse/clickhouse-server:latest
+    container_name: helicone-clickhouse
+    environment:
+      CLICKHOUSE_DB: helicone
+      CLICKHOUSE_USER: helicone
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-changeme}
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+    ports:
+      - "8123:8123"  # HTTP interface
+      - "9000:9000"  # Native interface
+    restart: unless-stopped
+
+  # Helicone API: Backend service
+  api:
+    image: helicone/helicone-api:latest
+    container_name: helicone-api
+    depends_on:
+      - postgres
+      - clickhouse
+    environment:
+      DATABASE_URL: postgresql://helicone:${POSTGRES_PASSWORD:-changeme}@postgres:5432/helicone
+      CLICKHOUSE_HOST: clickhouse
+      CLICKHOUSE_USER: helicone
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-changeme}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      JWT_SECRET: ${JWT_SECRET:-your-secret-key-change-in-production}
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
+  # Helicone Web UI: Dashboard interface
+  web:
+    image: helicone/helicone-web:latest
+    container_name: helicone-web
+    depends_on:
+      - api
+    environment:
+      NEXT_PUBLIC_API_URL: http://api:8080
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  clickhouse_data:
+
+# Usage:
+# 1. Create .env file with passwords and API keys:
+#    POSTGRES_PASSWORD=your_postgres_password
+#    CLICKHOUSE_PASSWORD=your_clickhouse_password
+#    OPENAI_API_KEY=your_openai_key
+#    ANTHROPIC_API_KEY=your_anthropic_key
+#    JWT_SECRET=your_jwt_secret
+#
+# 2. Start the stack:
+#    docker-compose up -d
+#
+# 3. Access dashboard:
+#    http://localhost:3000
+#
+# 4. Point your app to self-hosted gateway:
+#    base_url="http://localhost:8080"
